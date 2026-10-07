@@ -24,4 +24,4 @@ Request and response schemas are maintained in `lib/api-spec/openapi.yaml`. Rege
 pnpm --filter @workspace/api-spec run codegen
 ```
 
-The scan endpoint does not accept retailer URLs or arbitrary code. A future live adapter should use a separate, explicitly permitted data source and should preserve the demo/live distinction.
+The scan endpoint does not accept retailer URLs or arbitrary code. Current deal-card buttons construct official Amazon.in and Flipkart product-search links from the product title; they are not verified listing URLs and do not carry the synthetic sample price. A future live adapter should use a separate, explicitly permitted data source and should preserve the demo/live distinction.

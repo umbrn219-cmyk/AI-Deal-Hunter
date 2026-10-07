@@ -120,6 +120,25 @@ function Classification({ deal }: { deal: Deal }) {
   return <span className={`classification ${clsClass(deal.classification)}`}>{clsLabel(deal.classification)}</span>;
 }
 function DemoFlag() { return <span className="demo-pill"><span>DEMO</span></span>; }
+type RetailerStore = 'Amazon.in' | 'Flipkart';
+function retailerSearchUrl(store: RetailerStore, productTitle: string): string {
+  const query = encodeURIComponent(productTitle);
+  return store === 'Amazon.in'
+    ? `https://www.amazon.in/s?k=${query}`
+    : `https://www.flipkart.com/search?q=${query}`;
+}
+function RetailerSearchLink({ store, productTitle, dealId }: { store: RetailerStore; productTitle: string; dealId: string }) {
+  return <a
+    className="button button-quiet"
+    href={retailerSearchUrl(store, productTitle)}
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label={`Find ${productTitle} in official ${store} search results`}
+    data-testid={`link-${store === 'Amazon.in' ? 'amazon' : 'flipkart'}-${dealId}`}
+  >
+    <ExternalLink size={13} />{store}
+  </a>;
+}
 function DealSummaryRow({ deal }: { deal: Deal }) {
   return <div className="deal-row" data-testid={`row-deal-${deal.id}`}>
     <div><p className="deal-title">{deal.title}</p><div className="deal-meta"><DemoFlag /><span>{deal.marketplace}</span><span>·</span><span>{deal.brand}</span><span>·</span><Classification deal={deal} /></div></div>
@@ -267,13 +286,20 @@ function DealsPage() {
   const filters = [['', 'All signals'], ['great_deal', 'Great'], ['extreme_deal', 'Extreme'], ['price_anomaly', 'Anomalies'], ['possible_pricing_error', 'Pricing errors']];
   return <main className="page">
     <PageTitle eyebrow="Signals / Matched deals" title="Deal desk" subtitle="Compare today’s price with observed history; treat anomalies with care." action={<span className="demo-pill">SAMPLE CATALOG</span>} />
-    <div className="alert-box" style={{ marginBottom: 16 }}><CircleAlert size={15} /><span><strong>Availability is not verified.</strong> Every seeded result is marked DEMO. “Discount” here compares observed price points; it is not a retailer’s list-price claim.</span></div>
+     <div className="alert-box" style={{ marginBottom: 16 }}><CircleAlert size={15} /><span><strong>Availability is not verified.</strong> Every seeded result is marked DEMO. Retailer buttons open official search results, not verified product listings; confirm the exact model, seller, availability, and checkout price before ordering. The sample price is not a live retailer price.</span></div>
     <div className="filter-row" aria-label="Deal classification filter">{filters.map(([value, label]) => <button key={value} className={`filter-chip ${classification === value ? 'selected' : ''}`} onClick={() => setClassification(value)} data-testid={`button-deal-filter-${value || 'all'}`}><Filter size={11} />{label}</button>)}</div>
     {deals.isLoading ? <div className="deals-grid">{[1, 2, 3, 4].map(n => <div className="card deal-card" key={n}><div className="skeleton" style={{ width: '45%' }} /><div className="skeleton" style={{ width: '90%', marginTop: 16 }} /><div className="skeleton" style={{ width: '70%', marginTop: 10 }} /><div className="skeleton" style={{ height: 50, marginTop: 20 }} /></div>)}</div> : deals.isError ? <ErrorPanel message="Matched deal data could not be loaded." retry={() => void deals.refetch()} /> : (deals.data ?? []).length === 0 ? <EmptyPanel title="No matches in this view" detail="Try another classification or add a monitor and run a mock catalog scan." /> : <div className="deals-grid">{(deals.data ?? []).map(deal => <article className="card deal-card" key={deal.id} data-testid={`card-deal-${deal.id}`}><div className="deal-card-top"><div><div className="deal-brand">{deal.brand} · {deal.category}</div><h3>{deal.title}</h3></div><DemoFlag /></div><div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}><Classification deal={deal} /><span className="tag" style={{ background: '#edf0e8', color: '#627366' }}>{deal.marketplace}</span></div>
       {(deal.classification.includes('anomaly') || deal.classification.includes('error')) && <div className="warning-line"><CircleAlert size={12} style={{ verticalAlign: 'middle', marginRight: 5 }} />Potential pricing anomaly · score {deal.anomalyScore}/100. Verify the history, not the crossed-out price.</div>}
       <div className="price-compare"><div><span>Current sample</span><strong>{rupees(deal.currentPrice)}</strong></div><div><span>Observed median</span><strong>{rupees(deal.historicalMedian)}</strong></div><div><span>Observed low</span><strong>{rupees(deal.historicalLow)}</strong></div></div>
       <div className="deal-meta" style={{ marginBottom: 13 }}><span>{deal.rating.toFixed(1)} rating</span><span>·</span><span>{compact(deal.reviewCount)} reviews</span><span>·</span><span>Seller: {deal.seller}</span></div>
-      <div className="deal-foot"><div className="trust-note">Historical discount <strong>{deal.historicalDiscountPercent}%</strong> · confidence {deal.confidence}%<br />Matched by: {deal.matchedTaskNames.join(', ') || '—'}</div><div style={{ display: 'flex', gap: 4 }}><button className="button button-quiet" onClick={() => setHistoryId(deal.productId)} data-testid={`button-history-${deal.id}`}><Eye size={13} />History</button>{deal.productUrl ? <a className="button button-quiet" href={deal.productUrl} target="_blank" rel="noreferrer" aria-label={`Open retailer page for ${deal.title}`} data-testid={`link-retailer-${deal.id}`}><ExternalLink size={13} />Page</a> : <button className="button button-quiet" disabled title="No retailer URL provided" data-testid={`button-retailer-unavailable-${deal.id}`}><ExternalLink size={13} />Unavailable</button>}</div></div>
+       <div className="deal-foot">
+         <div className="trust-note">Historical discount <strong>{deal.historicalDiscountPercent}%</strong> · confidence {deal.confidence}%<br />Matched by: {deal.matchedTaskNames.join(', ') || '—'}</div>
+         <div className="deal-actions">
+           <button className="button button-quiet" onClick={() => setHistoryId(deal.productId)} data-testid={`button-history-${deal.id}`}><Eye size={13} />History</button>
+           <RetailerSearchLink store="Amazon.in" productTitle={deal.title} dealId={deal.id} />
+           <RetailerSearchLink store="Flipkart" productTitle={deal.title} dealId={deal.id} />
+         </div>
+       </div>
     </article>)}</div>}
     {historyId && <PriceHistory productId={historyId} onClose={() => setHistoryId(null)} />}
   </main>;

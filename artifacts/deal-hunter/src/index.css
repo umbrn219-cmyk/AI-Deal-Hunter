@@ -127,7 +127,8 @@ h1,h2,h3,p {margin-top:0}
 .price-compare{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:15px 0;padding:12px 0;border-block:1px solid hsl(var(--border))}
 .price-compare span{font:9px var(--app-font-mono);text-transform:uppercase;color:hsl(var(--muted-foreground));display:block;margin-bottom:6px}
 .price-compare strong{font:500 14px var(--app-font-serif)}
-.deal-foot{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.deal-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.deal-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
 .trust-note{font-size:10px;color:hsl(var(--muted-foreground));line-height:1.45}
 .warning-line{background:#fbf0e9;color:#965736;border-radius:7px;padding:8px 10px;font-size:10px;margin:10px 0}
 .empty-state,.error-state,.loading-state{padding:36px 22px;text-align:center}

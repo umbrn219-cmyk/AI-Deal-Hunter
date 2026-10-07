@@ -4,7 +4,7 @@ AI Deal Hunter is a price-rule dashboard for India-focused shopping workflows. T
 
 ## Important: demo-only catalog
 
-The seeded products, prices, sellers, availability, histories, deals, and alerts are synthetic. The UI labels them as demo data. No retailer feed or marketplace API is connected. Marketplace selections are saved preferences only; they do not trigger retailer checks. Product URLs are intentionally unset rather than invented.
+The seeded products, prices, sellers, availability, histories, deals, and alerts are synthetic. The UI labels them as demo data. No retailer feed or marketplace API is connected. Marketplace selections are saved preferences only; they do not trigger retailer checks. Deal cards link to official Amazon.in and Flipkart search results, not verified product pages, and those sites do not share the demo prices.
 
 The app does not place orders, access retailer accounts, or bypass access controls. It has no checkout automation.
 

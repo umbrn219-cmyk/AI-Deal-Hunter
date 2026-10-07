@@ -33,7 +33,7 @@ An India-focused deal-monitoring dashboard for managing price rules and reviewin
 ## Architecture decisions
 
 - This first slice scans only the built-in mock catalog; retailer selections are preferences, not active integrations.
-- Product URLs are null until an approved marketplace adapter supplies a verified destination.
+- Stored product URLs remain null until an approved marketplace adapter supplies a verified destination. Deal cards instead link to official retailer search results and warn that sample prices are not live.
 - Every seeded product, price, deal, and alert is synthetic and labeled as demo data.
 - Gemini converts natural-language text to a draft rule, validates the structured output, and requires user review before saving.
 - Task and catalog data are shared by this project; account authentication and user-level isolation are not yet implemented.
