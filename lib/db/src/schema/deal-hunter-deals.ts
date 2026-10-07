@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   integer,
+  jsonb,
   pgTable,
   real,
   text,
@@ -10,10 +11,12 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { dealHunterProductsTable } from "./deal-hunter-products";
+import type { DealSnapshot } from "./deal-integrity";
 
 export const dealHunterDealsTable = pgTable("deal_hunter_deals", {
   id: uuid("id").primaryKey().defaultRandom(),
   fingerprint: text("fingerprint").notNull().unique(),
+  snapshot: jsonb("snapshot").$type<DealSnapshot>(),
   productId: uuid("product_id")
     .notNull()
     .references(() => dealHunterProductsTable.id, { onDelete: "cascade" }),

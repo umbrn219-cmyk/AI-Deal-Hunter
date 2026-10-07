@@ -7,7 +7,9 @@ import {
   dealHunterProductsTable,
   dealHunterScanRunsTable,
   dealHunterTasksTable,
+  dealIntegrityEventsTable,
 } from "@workspace/db";
+import { demoObservation, observationIdentity, validateDeal, notificationFromSnapshot } from "./deal-integrity";
 
 const STOP_WORDS = new Set([
   "a",
@@ -142,6 +144,7 @@ export async function runMockScan(): Promise<{
 
   if (tasks.length > 0) {
     for (const product of products) {
+      const observation = demoObservation(product);
       const history = await db
         .select()
         .from(dealHunterPriceObservationsTable)
@@ -172,16 +175,12 @@ export async function runMockScan(): Promise<{
       if (matchedTasks.length === 0) continue;
       matchedDeals += 1;
 
-      const latestObservation = history[0];
-      if (
-        !latestObservation ||
-        Math.abs(latestObservation.price - product.currentPrice) > 0.01
-      ) {
-        await db.insert(dealHunterPriceObservationsTable).values({
-          productId: product.id,
-          price: product.currentPrice,
-        });
-      }
+      await db.insert(dealHunterPriceObservationsTable).values({
+        productId: product.id,
+        price: observation.currentPrice,
+        observedAt: new Date(observation.priceObservedAt),
+        listing: observation,
+      });
 
       const historicalDiscountPercent = Math.round(discount * 10) / 10;
       const belowObservedLow = product.currentPrice < historicalLow;
@@ -207,7 +206,10 @@ export async function runMockScan(): Promise<{
         historicalMedian,
         product.currentPrice,
       );
-      const fingerprint = `${product.id}:${product.currentPrice.toFixed(2)}`;
+      const validation = await validateDeal(observation, historicalMedian, {
+        critical: matchedTasks.some(task => task.priority === "critical") || classification.includes("anomaly"),
+      });
+      const fingerprint = `exact:${observationIdentity(observation)}`;
       const existingDeal = await db
         .select()
         .from(dealHunterDealsTable)
@@ -219,6 +221,8 @@ export async function runMockScan(): Promise<{
           await db
             .insert(dealHunterDealsTable)
             .values({
+              id: validation.snapshot.dealId,
+              snapshot: validation.snapshot,
               fingerprint,
               productId: product.id,
               currentPrice: product.currentPrice,
@@ -236,6 +240,10 @@ export async function runMockScan(): Promise<{
             .returning()
         )[0];
 
+      await db.insert(dealIntegrityEventsTable).values({
+        dealId: deal.id, kind: validation.reason,
+        details: { observation, rechecked: validation.rechecked, decision: validation.snapshot.alertDecision, dealScore },
+      });
       const alertFingerprint = fingerprint;
       const existingNotification = await db
         .select({ id: dealHunterNotificationsTable.id })
@@ -245,23 +253,15 @@ export async function runMockScan(): Promise<{
       if (existingNotification.length > 0) {
         duplicateAlertsPrevented += 1;
       } else {
-        const critical = classification === "critical_price_anomaly";
-        const anomaly = [
-          "possible_pricing_error",
-          "price_anomaly",
-          "critical_price_anomaly",
-        ].includes(classification);
+        // Demo messages are explicit validation notices, not actionable deals.
+        // Real adapters must use notificationFromSnapshot after acceptance.
+        const exactAlert = validation.accepted ? notificationFromSnapshot(validation.snapshot) : null;
+        if (!exactAlert && observation.sourceKind !== "DEMO") continue;
         await db.insert(dealHunterNotificationsTable).values({
           fingerprint: alertFingerprint,
-          title: critical
-            ? "Critical demo price anomaly"
-            : anomaly
-              ? "Possible demo pricing anomaly"
-              : "Demo rule match",
-          message: critical
-            ? `${product.title}: the mock price is far below its synthetic observed median. This is demo data, not a real offer.`
-            : `${product.title}: mock price ₹${product.currentPrice.toLocaleString("en-IN")} versus synthetic observed median ₹${Math.round(historicalMedian).toLocaleString("en-IN")}.`,
-          kind: anomaly ? "anomaly" : "deal",
+          title: exactAlert?.title ?? "Demo observation — unverified",
+          message: exactAlert?.message ?? `${observation.productTitle}: synthetic price ₹${observation.currentPrice.toLocaleString("en-IN")}. No verified listing, variant, seller or destination is available. Not a retailer deal; exact-deal link disabled.`,
+          kind: exactAlert ? "deal" : "validation",
           dealId: deal.id,
         });
         newAlerts += 1;
