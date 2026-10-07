@@ -24,7 +24,7 @@ export function observationIdentity(o: ListingObservation) {
 export function priceProblem(o: ListingObservation): string | null {
   if (!Number.isFinite(o.currentPrice) || o.currentPrice <= 0 || !Number.isFinite(o.basePrice) ||
       o.currentPrice !== o.basePrice || o.sellerPrice !== o.basePrice) return "CONDITIONAL_OR_INVALID_PRICE";
-  if (o.priceType !== "BASE" || /starting|from\s+[₹\d]|emi|per month|effective|after exchange|with coupon|bank offer/i.test(o.priceConditions.join(" "))) return "CONDITIONAL_PRICE";
+  if (o.priceType !== "BASE" || /starting|from\s+[₹\d]|emi|per month|effective|exchange|coupon|bank|cashback/i.test(o.priceConditions.join(" "))) return "CONDITIONAL_PRICE";
   if (!o.productId || !o.productVariantId || !o.sellerId || !o.sellerName || !/^[A-Z]{3}$/.test(o.currency)) return "IDENTITY_INCOMPLETE";
   return null;
 }
@@ -109,12 +109,21 @@ function deepFreeze<T extends object>(value: T): T {
 
 export function notificationFromSnapshot(s: DealSnapshot) {
   if (s.alertDecision !== "SEND_NOTIFICATION" || s.priceStatus !== "VERIFIED" ||
+      s.sourceKind !== "LISTING" || priceProblem(s) ||
+      !s.variantLinkGuaranteed || !s.sellerLinkGuaranteed ||
       s.urlStatus !== "VALID" || !s.canonicalProductUrl || !isFresh(s)) throw new Error("Unverified or stale snapshot cannot generate a deal notification");
   return Object.freeze({
     price: s.currentPrice, url: s.canonicalProductUrl,
     title: `${s.productTitle} ${s.variant}`.trim(),
-    message: `${s.productTitle} ${s.variant} · ${s.currency} ${s.currentPrice} · Historical median ${s.referencePrice} · ${s.discountPercent.toFixed(1)}% lower · Seller: ${s.sellerName} · ${s.availability} · Confidence: ${s.confidenceScore}/100 · Price checked: ${s.priceVerificationTimestamp}. Price can change rapidly.${s.sellerLinkGuaranteed ? "" : " Seller-specific link unavailable; select the stated seller."}${s.variantLinkGuaranteed ? "" : " Variant-specific link unavailable; select the stated variant."}`,
+    message: `${s.productTitle} ${s.variant} · ${s.currency} ${s.currentPrice} · Historical median ${s.referencePrice} · ${s.discountPercent.toFixed(1)}% lower · Seller: ${s.sellerName} · ${s.availability} · Confidence: ${s.confidenceScore}/100 · Price checked: ${s.priceVerificationTimestamp}. Price can change rapidly.`,
   });
+}
+
+/** All delivery surfaces use the saved observation, never the mutable catalog. */
+export function exactListingNotification(snapshot: DealSnapshot | null) {
+  if (!snapshot) return null;
+  try { return notificationFromSnapshot(snapshot); }
+  catch { return null; } // Legacy, demo, conditional and stale records have no link.
 }
 
 export function demoObservation(product: {

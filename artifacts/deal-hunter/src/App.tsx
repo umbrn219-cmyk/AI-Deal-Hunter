@@ -120,23 +120,17 @@ function Classification({ deal }: { deal: Deal }) {
   return <span className={`classification ${clsClass(deal.classification)}`}>{clsLabel(deal.classification)}</span>;
 }
 function DemoFlag() { return <span className="demo-pill"><span>DEMO</span></span>; }
-type RetailerStore = 'Amazon.in' | 'Flipkart';
-function retailerSearchUrl(store: RetailerStore, productTitle: string): string {
-  const query = encodeURIComponent(productTitle);
-  return store === 'Amazon.in'
-    ? `https://www.amazon.in/s?k=${query}`
-    : `https://www.flipkart.com/search?q=${query}`;
-}
-function RetailerSearchLink({ store, productTitle, dealId }: { store: RetailerStore; productTitle: string; dealId: string }) {
+function ExactListingLink({ url, id }: { url?: string | null; id: string }) {
+  if (!url) return <span className="trust-note">Exact listing unavailable</span>;
   return <a
     className="button button-quiet"
-    href={retailerSearchUrl(store, productTitle)}
+    href={url}
     target="_blank"
     rel="noopener noreferrer"
-    aria-label={`Find ${productTitle} in official ${store} search results`}
-    data-testid={`link-${store === 'Amazon.in' ? 'amazon' : 'flipkart'}-${dealId}`}
+    aria-label="Open the exact product variant and seller listing"
+    data-testid={`link-exact-listing-${id}`}
   >
-    <ExternalLink size={13} />{store}
+    <ExternalLink size={13} />Open exact listing
   </a>;
 }
 function DealSummaryRow({ deal }: { deal: Deal }) {
@@ -145,8 +139,8 @@ function DealSummaryRow({ deal }: { deal: Deal }) {
     <div className="deal-price">{rupees(deal.currentPrice)}<small><span className="discount">{deal.realDiscountPercent}% vs observed high</span></small></div>
   </div>;
 }
-function NotificationPreview({ notification }: { notification: { id: string; title: string; message: string; createdAt: string; read: boolean } }) {
-  return <div className="notification-item" data-testid={`notification-preview-${notification.id}`}><span className={`notif-marker ${notification.read ? 'read' : ''}`} /><div><p className="notif-title">{notification.title}</p><p className="notif-copy">{notification.message}</p><div className="notif-time">{relativeTime(notification.createdAt)}</div></div></div>;
+function NotificationPreview({ notification }: { notification: { id: string; title: string; message: string; createdAt: string; read: boolean; productUrl?: string | null } }) {
+  return <div className="notification-item" data-testid={`notification-preview-${notification.id}`}><span className={`notif-marker ${notification.read ? 'read' : ''}`} /><div><p className="notif-title">{notification.title}</p><p className="notif-copy">{notification.message}</p><ExactListingLink url={notification.productUrl} id={notification.id} /><div className="notif-time">{relativeTime(notification.createdAt)}</div></div></div>;
 }
 
 function DashboardPage() {
@@ -296,8 +290,7 @@ function DealsPage() {
          <div className="trust-note">Historical discount <strong>{deal.historicalDiscountPercent}%</strong> · confidence {deal.confidence}%<br />Matched by: {deal.matchedTaskNames.join(', ') || '—'}</div>
          <div className="deal-actions">
            <button className="button button-quiet" onClick={() => setHistoryId(deal.productId)} data-testid={`button-history-${deal.id}`}><Eye size={13} />History</button>
-           <RetailerSearchLink store="Amazon.in" productTitle={deal.title} dealId={deal.id} />
-           <RetailerSearchLink store="Flipkart" productTitle={deal.title} dealId={deal.id} />
+           <ExactListingLink url={deal.productUrl} id={deal.id} />
          </div>
        </div>
     </article>)}</div>}

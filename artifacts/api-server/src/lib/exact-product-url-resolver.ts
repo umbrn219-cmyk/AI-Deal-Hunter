@@ -49,6 +49,10 @@ export class ExactProductUrlResolver {
     // Only URLs supplied by this very observation may be selected.
     const original = listing.offerUrl ?? listing.canonicalProductUrl ?? listing.productUrl;
     if (!original || !permittedUrl(original, adapter) || isGenericPage(original)) return invalid("URL_INVALID");
+    // A product-only page can default to another variant or seller. Do not
+    // advertise the observed price unless this destination selects both.
+    if (!adapter.variantSpecificUrls || !adapter.sellerSpecificUrls ||
+        (listing.offerId && !adapter.offerSpecificUrls)) return invalid("EXACT_LISTING_LINK_UNAVAILABLE");
     const sourceIdentity = adapter.identityFromUrl(original);
     if (!sourceIdentity || sourceIdentity.productId !== listing.productId) return invalid("PRODUCT_URL_MISMATCH");
     const resolved = await adapter.inspectUrl(original);
@@ -56,9 +60,9 @@ export class ExactProductUrlResolver {
     if (chain.length > 12 || chain.some(url => !permittedUrl(url, adapter) || isGenericPage(url))) return invalid("REDIRECT_INVALID", chain, resolved.finalUrl);
     const same = (identity: UrlIdentity | null) => identity &&
       identity.productId === listing.productId &&
-      (!adapter.variantSpecificUrls || identity.productVariantId === listing.productVariantId) &&
-      (!adapter.sellerSpecificUrls || identity.sellerId === listing.sellerId) &&
-      (!adapter.offerSpecificUrls || !listing.offerId || identity.offerId === listing.offerId);
+      identity.productVariantId === listing.productVariantId &&
+      identity.sellerId === listing.sellerId &&
+      (!listing.offerId || identity.offerId === listing.offerId);
     if (resolved.pageKind !== "LISTING" || !same(resolved.identity) ||
         chain.some(url => !same(adapter.identityFromUrl(url)))) {
       return invalid("IDENTITY_URL_MISMATCH", chain, resolved.finalUrl);

@@ -447,6 +447,10 @@ components:
         dealId: { type: ["string", "null"] }
         createdAt: { type: string, format: date-time }
         demo: { type: boolean }
+        productUrl:
+          type: ["string", "null"]
+          format: uri
+          description: Exact variant and seller URL from the verified price snapshot; null for demo, stale or unverified alerts.
     WatchlistItem:
       type: object
       required: [id, label, kind, createdAt]

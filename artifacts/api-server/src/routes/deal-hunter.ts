@@ -37,6 +37,7 @@ import {
   dealHunterWatchlistTable,
 } from "@workspace/db";
 import { runMockScan } from "../lib/deal-engine";
+import { exactListingNotification } from "../lib/deal-integrity";
 
 const router: IRouter = Router();
 const TASK_DRAFT_MODEL = "gemini-3.8-flash";
@@ -57,16 +58,18 @@ function dealResponse(
   deal: typeof dealHunterDealsTable.$inferSelect,
   product: typeof dealHunterProductsTable.$inferSelect,
 ) {
+  const snapshot = deal.snapshot;
+  const exact = exactListingNotification(snapshot);
   return {
     id: deal.id,
     productId: product.id,
-    title: product.title,
+    title: snapshot ? `${snapshot.productTitle} ${snapshot.variant}`.trim() : product.title,
     category: product.category,
     brand: product.brand,
     marketplace: product.marketplace,
-    seller: product.seller,
-    productUrl: product.productUrl,
-    currentPrice: deal.currentPrice,
+    seller: snapshot?.sellerName ?? product.seller,
+    productUrl: exact?.url ?? null,
+    currentPrice: snapshot?.currentPrice ?? deal.currentPrice,
     historicalMedian: deal.historicalMedian,
     historicalLow: deal.historicalLow,
     observedHigh: deal.observedHigh,
@@ -79,7 +82,7 @@ function dealResponse(
     confidence: deal.confidence,
     dealScore: deal.dealScore,
     classification: deal.classification,
-    demo: true,
+    demo: !snapshot || snapshot.sourceKind === "DEMO",
     matchedTaskNames: deal.matchedTaskNames,
     createdAt: iso(deal.createdAt),
   };
@@ -87,16 +90,19 @@ function dealResponse(
 
 function notificationResponse(
   notification: typeof dealHunterNotificationsTable.$inferSelect,
+  deal: typeof dealHunterDealsTable.$inferSelect | null = null,
 ) {
+  const exact = exactListingNotification(deal?.snapshot ?? null);
   return {
     id: notification.id,
-    title: notification.title,
-    message: notification.message,
+    title: exact?.title ?? notification.title,
+    message: exact?.message ?? notification.message,
     kind: notification.kind === "validation" ? "system" : notification.kind,
     read: notification.read,
     dealId: notification.dealId,
     createdAt: iso(notification.createdAt),
-    demo: true,
+    demo: !deal?.snapshot || deal.snapshot.sourceKind === "DEMO",
+    productUrl: exact?.url ?? null,
   };
 }
 
@@ -117,8 +123,9 @@ router.get("/deal-hunter/dashboard", async (_req, res): Promise<void> => {
       .orderBy(desc(dealHunterDealsTable.createdAt))
       .limit(100),
     db
-      .select()
+      .select({ notification: dealHunterNotificationsTable, deal: dealHunterDealsTable })
       .from(dealHunterNotificationsTable)
+      .leftJoin(dealHunterDealsTable, eq(dealHunterNotificationsTable.dealId, dealHunterDealsTable.id))
       .orderBy(desc(dealHunterNotificationsTable.createdAt))
       .limit(100),
     db
@@ -147,7 +154,7 @@ router.get("/deal-hunter/dashboard", async (_req, res): Promise<void> => {
     ).length,
     priceDrops: deals.filter((deal) => deal.historicalDiscountPercent > 0)
       .length,
-    unreadAlerts: notifications.filter((notification) => !notification.read)
+    unreadAlerts: notifications.filter(({ notification }) => !notification.read)
       .length,
     lastScanAt: scanRuns[0] ? iso(scanRuns[0].createdAt) : null,
     scanLatencyMs: scanRuns[0]?.durationMs ?? 0,
@@ -156,7 +163,7 @@ router.get("/deal-hunter/dashboard", async (_req, res): Promise<void> => {
     recentDeals: deals.slice(0, 6),
     recentNotifications: notifications
       .slice(0, 6)
-      .map(notificationResponse),
+      .map(({ notification, deal }) => notificationResponse(notification, deal)),
   };
   res.json(GetDealHunterDashboardResponse.parse(response));
 });
@@ -418,13 +425,14 @@ router.get(
   "/deal-hunter/notifications",
   async (_req, res): Promise<void> => {
     const notifications = await db
-      .select()
+      .select({ notification: dealHunterNotificationsTable, deal: dealHunterDealsTable })
       .from(dealHunterNotificationsTable)
+      .leftJoin(dealHunterDealsTable, eq(dealHunterNotificationsTable.dealId, dealHunterDealsTable.id))
       .orderBy(desc(dealHunterNotificationsTable.createdAt))
       .limit(100);
     res.json(
       GetDealHunterNotificationsResponse.parse(
-        notifications.map(notificationResponse),
+        notifications.map(({ notification, deal }) => notificationResponse(notification, deal)),
       ),
     );
   },
@@ -449,9 +457,12 @@ router.post(
       res.status(404).json({ error: "Alert not found." });
       return;
     }
+    const [deal] = notification.dealId
+      ? await db.select().from(dealHunterDealsTable).where(eq(dealHunterDealsTable.id, notification.dealId)).limit(1)
+      : [];
     res.json(
       MarkDealHunterNotificationReadResponse.parse(
-        notificationResponse(notification),
+        notificationResponse(notification, deal ?? null),
       ),
     );
   },
