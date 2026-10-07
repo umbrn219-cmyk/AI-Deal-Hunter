@@ -92,7 +92,7 @@ function notificationResponse(
     id: notification.id,
     title: notification.title,
     message: notification.message,
-    kind: notification.kind,
+    kind: notification.kind === "validation" ? "system" : notification.kind,
     read: notification.read,
     dealId: notification.dealId,
     createdAt: iso(notification.createdAt),
