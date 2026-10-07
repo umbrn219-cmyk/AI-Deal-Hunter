@@ -17,4 +17,10 @@
 //   export type InsertPost = z.infer<typeof insertPostSchema>;
 //   export type Post = typeof postsTable.$inferSelect;
 
-export {}
+export * from "./deal-hunter-tasks";
+export * from "./deal-hunter-products";
+export * from "./deal-hunter-price-observations";
+export * from "./deal-hunter-deals";
+export * from "./deal-hunter-notifications";
+export * from "./deal-hunter-watchlist";
+export * from "./deal-hunter-scan-runs";
