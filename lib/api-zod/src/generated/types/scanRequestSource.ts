@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
-}
+export type ScanRequestSource = typeof ScanRequestSource[keyof typeof ScanRequestSource];
+
+
+export const ScanRequestSource = {
+  mock: 'mock',
+} as const;

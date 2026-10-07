@@ -5,7 +5,8 @@
  * API for the AI Deal Hunter demo-mode deal monitoring application.
  * OpenAPI spec version: 0.1.0
  */
+import type { ScanRequestSource } from './scanRequestSource';
 
-export interface HealthStatus {
-  status: string;
+export interface ScanRequest {
+  source: ScanRequestSource;
 }

@@ -1,0 +1,2088 @@
+# 🚀 PROJECT: AI DEAL HUNTER / SALE SNIPER
+
+You are an expert full-stack engineer, AI engineer, automation architect, security engineer and product designer.
+
+Build a production-quality web application called:
+
+**AI Deal Hunter — Sale Sniper**
+
+The application continuously discovers and evaluates legitimate product deals from supported e-commerce platforms and immediately alerts the user when a deal matches their rules.
+
+The system must be modular, scalable, secure, observable and easy to extend with additional marketplaces later.
+
+---
+
+# 1. CORE PRODUCT VISION
+
+The user wants an AI agent that continuously monitors supported e-commerce marketplaces during major sale events.
+
+Example marketplaces:
+
+* Amazon
+* Flipkart
+* Meesho
+* Croma
+* Reliance Digital
+* Vijay Sales
+* Tata Cliq
+* Myntra for applicable categories
+* Other marketplaces through officially permitted integrations
+
+The agent should:
+
+1. Discover products/deals.
+2. Normalize product information.
+3. Track historical prices.
+4. Calculate real discount percentage.
+5. Detect unusual price drops.
+6. Detect potentially erroneous pricing.
+7. Evaluate the user's custom deal rules.
+8. Rank deals by confidence/value.
+9. Immediately send notifications.
+10. Open the exact product URL.
+11. Prevent duplicate alerts.
+12. Maintain complete deal history.
+13. Provide a dashboard showing detected deals and task status.
+14. Support multiple user-created monitoring tasks.
+15. Support AI-assisted deal analysis.
+16. Prepare checkout automatically where technically permitted.
+17. Require explicit user confirmation before an irreversible purchase/payment.
+
+---
+
+# 2. VERY IMPORTANT COMPLIANCE REQUIREMENTS
+
+DO NOT:
+
+* bypass CAPTCHA
+* bypass anti-bot protections
+* bypass authentication
+* bypass access controls
+* evade rate limits
+* use stolen credentials
+* scrape private/user-only data
+* place purchases without required authorization
+* fabricate product/deal data
+
+Prefer:
+
+* official APIs
+* official feeds
+* permitted public pages
+* permitted integrations
+* reasonable request frequency
+* caching
+* exponential backoff
+* marketplace-specific adapters
+
+Every marketplace must have its own adapter interface.
+
+Example:
+
+MarketplaceAdapter
+
+Methods:
+
+* searchProducts()
+* getProduct()
+* getPrice()
+* getAvailability()
+* getProductUrl()
+* getSeller()
+* getRating()
+* getStockStatus()
+
+Do NOT tightly couple the entire application to one marketplace.
+
+---
+
+# 3. USER EXPERIENCE
+
+Create a modern dashboard.
+
+Main sections:
+
+## Dashboard
+
+Show:
+
+* Active monitoring tasks
+* Deals found today
+* Extreme deals
+* Price drops
+* Deals awaiting approval
+* Recent notifications
+* Marketplace health
+* Agent status
+* Last successful scan
+* Scan latency
+* Errors
+
+Use a clean responsive UI suitable for:
+
+* desktop
+* tablet
+* mobile browser
+
+---
+
+# 4. CUSTOM DEAL TASK ENGINE
+
+The user must be able to create up to at least 10 active monitoring tasks initially.
+
+Design the system so this limit can be increased later.
+
+Each task should support:
+
+### Task name
+
+Example:
+
+"iPhone under ₹10,000"
+
+### Category
+
+Examples:
+
+* Smartphone
+* Laptop
+* Headphones
+* Smartwatch
+* AC
+* Refrigerator
+* TV
+* Water purifier
+* Washing machine
+* Camera
+* GPU
+* Monitor
+* Electrical appliances
+* Custom
+
+### Product keywords
+
+Examples:
+
+iPhone 15
+iPhone 16
+Samsung Galaxy
+MacBook
+Sony headphones
+
+### Maximum price
+
+Example:
+
+₹10,000
+
+### Minimum discount
+
+Example:
+
+90%
+
+### Minimum rating
+
+Example:
+
+4.0
+
+### Minimum review count
+
+Example:
+
+500
+
+### Preferred sellers
+
+Optional.
+
+### Marketplace selection
+
+User can select:
+
+* Amazon
+* Flipkart
+* Meesho
+* Croma
+* etc.
+
+### Stock requirement
+
+Examples:
+
+* In stock only
+* Include low stock
+* Any
+
+### Notification preference
+
+Examples:
+
+* Push
+* Telegram
+* Email
+* Browser
+* Discord
+* SMS through supported provider
+
+---
+
+# 5. NATURAL LANGUAGE TASK CREATION
+
+This is an important AI feature.
+
+Allow the user to write:
+
+"Find any iPhone below ₹10,000 with at least 4 star rating and alert me immediately."
+
+AI converts it into structured JSON:
+
+{
+"category": "smartphone",
+"brand": ["Apple"],
+"maxPrice": 10000,
+"minRating": 4,
+"notification": "instant"
+}
+
+Another example:
+
+"Notify me if any laptop normally costing above 80000 becomes available below 15000."
+
+AI should generate:
+
+{
+"category": "laptop",
+"historicalPriceMin": 80000,
+"maxPrice": 15000
+}
+
+The AI must NEVER directly execute arbitrary commands.
+
+Use strict schema validation.
+
+---
+
+# 6. DEAL DETECTION ENGINE
+
+Build a dedicated Deal Detection Engine.
+
+For every product calculate:
+
+### Discount percentage
+
+discountPercent =
+((referencePrice - currentPrice) / referencePrice) * 100
+
+But NEVER blindly trust MRP.
+
+Maintain multiple reference prices:
+
+* current price
+* historical median
+* historical minimum
+* historical maximum
+* marketplace listed price
+* seller price
+* known historical price
+* coupon-adjusted price
+* bank-offer-adjusted price
+
+Then calculate:
+
+### Real discount
+
+realDiscountPercent
+
+### Historical discount
+
+historicalDiscountPercent
+
+### Price anomaly score
+
+0–100
+
+### Deal confidence
+
+0–100
+
+---
+
+# 7. FAKE DEAL PROTECTION
+
+A huge discount does NOT automatically mean a good deal.
+
+Build a Fake Deal Detection Engine.
+
+Detect:
+
+* inflated MRP
+* recently increased prices
+* fake discount percentage
+* suspicious seller
+* missing warranty
+* unusually low review count
+* suspicious review patterns
+* different product variant
+* refurbished product
+* open-box product
+* accessory instead of main product
+* misleading title
+* shipping cost
+* hidden fees
+* coupon requirements
+* bank-card requirements
+* exchange requirement
+* membership requirement
+
+Example:
+
+MRP = ₹1,00,000
+Historical price = ₹18,000
+Current price = ₹15,000
+
+Do NOT claim:
+
+"85% off"
+
+Instead show:
+
+"₹3,000 below recent historical price."
+
+---
+
+# 8. PRICE HISTORY ENGINE
+
+Store price observations.
+
+Example:
+
+Product:
+iPhone 15 128GB
+
+Historical data:
+
+date | price
+
+01 Oct | ₹62,999
+02 Oct | ₹61,999
+03 Oct | ₹59,999
+04 Oct | ₹57,999
+
+Calculate:
+
+* 24h change
+* 7-day change
+* 30-day change
+* historical median
+* all-time observed low
+* all-time observed high
+
+Display a price graph.
+
+---
+
+# 9. EXTREME DEAL DETECTION
+
+Create special classification:
+
+### NORMAL_DEAL
+
+20–50% effective discount
+
+### GREAT_DEAL
+
+50–70%
+
+### EXTREME_DEAL
+
+70–90%
+
+### PRICE_ANOMALY
+
+90%+
+
+### POSSIBLE_PRICING_ERROR
+
+Very unusual price compared with historical data.
+
+Example:
+
+Normal price:
+₹1,00,000
+
+Current:
+₹1,000
+
+System should say:
+
+"Possible pricing anomaly — 99% below historical price."
+
+NOT:
+
+"Guaranteed deal."
+
+---
+
+# 10. CUSTOM RULE ENGINE
+
+Build a rule engine capable of evaluating:
+
+* price
+* discount
+* historical price
+* category
+* brand
+* model
+* rating
+* review count
+* seller
+* marketplace
+* stock
+* shipping
+* coupon
+* payment method
+* location availability where legitimately provided
+* historical price percentile
+
+Support:
+
+AND
+
+OR
+
+NOT
+
+BETWEEN
+
+LESS_THAN
+
+GREATER_THAN
+
+CONTAINS
+
+MATCHES
+
+Example:
+
+IF
+
+category = smartphone
+
+AND
+
+brand = Apple
+
+AND
+
+currentPrice < ₹10,000
+
+THEN
+
+ALERT_HIGH_PRIORITY
+
+---
+
+# 11. ADVANCED NATURAL LANGUAGE RULES
+
+Allow:
+
+"Alert me if an Apple iPhone goes below ₹15k."
+
+"Alert me if any smartphone under ₹2k has at least 4 stars."
+
+"Alert me if a laptop normally above ₹70k drops below ₹20k."
+
+"Alert me if any Sony headphone goes below ₹1,000."
+
+"Alert me if any 55 inch 4K TV goes below ₹25,000."
+
+"Alert me if an AC below ₹25,000 has at least 1 ton capacity."
+
+The AI converts these to validated rules.
+
+---
+
+# 12. DEAL PRIORITY SCORE
+
+Every deal gets a score from 0–100.
+
+Factors:
+
+* historical price difference
+* discount
+* seller quality
+* rating
+* review count
+* stock availability
+* price anomaly
+* product popularity
+* confidence
+* shipping cost
+* coupon complexity
+
+Example:
+
+🔥 DEAL SCORE: 97/100
+
+Confidence:
+
+94%
+
+Historical low:
+
+₹52,999
+
+Current:
+
+₹39,999
+
+---
+
+# 13. INSTANT ALERT SYSTEM
+
+When a matching deal appears:
+
+Send notification immediately.
+
+Notification:
+
+🔥 EXTREME DEAL FOUND
+
+iPhone 15 128GB
+
+Current:
+₹9,999
+
+Historical average:
+₹61,000
+
+Observed discount:
+83.6%
+
+Deal confidence:
+91%
+
+Seller:
+Example Seller
+
+Stock:
+In Stock
+
+Marketplace:
+Example Marketplace
+
+[Open Product]
+
+[View Deal]
+
+[Add to Watchlist]
+
+Do not spam the user.
+
+Use:
+
+* deduplication
+* cooldown
+* alert fingerprinting
+
+---
+
+# 14. MULTI-CHANNEL NOTIFICATIONS
+
+Support architecture for:
+
+* Browser Push
+* Telegram
+* Email
+* Discord
+* Android push
+* Webhook
+* SMS provider
+
+Make notification providers pluggable.
+
+Example interface:
+
+NotificationProvider
+
+send(notification)
+
+---
+
+# 15. ANDROID PHONE NOTIFICATION SUPPORT
+
+Create backend APIs so a future Android app can connect.
+
+Use secure device registration.
+
+Android app should receive:
+
+* deal title
+* image
+* current price
+* historical price
+* discount
+* confidence
+* marketplace
+* product URL
+* task that triggered it
+
+Tapping notification opens the product.
+
+---
+
+# 16. TELEGRAM BOT
+
+Provide optional Telegram integration.
+
+Commands:
+
+/start
+
+/tasks
+
+/deals
+
+/pause
+
+/resume
+
+/status
+
+/settings
+
+User can receive instant deal notifications.
+
+---
+
+# 17. AUTO-CHECKOUT ASSISTANT
+
+Implement a SAFE checkout workflow.
+
+The agent may:
+
+1. Detect deal.
+2. Open product.
+3. Validate product.
+4. Select configured variant.
+5. Add to cart where supported.
+6. Navigate checkout.
+7. Re-check price.
+8. Re-check seller.
+9. Re-check shipping.
+10. STOP before irreversible purchase/payment.
+11. Notify user.
+12. User explicitly confirms.
+13. Only then continue through supported mechanisms.
+
+Never silently purchase products.
+
+Never store raw card numbers or CVV.
+
+Use marketplace-supported payment methods and secure payment flows.
+
+---
+
+# 18. "₹1 LAKH PRODUCT FOR ₹1" PROTECTION
+
+Create an emergency alert mode.
+
+If:
+
+historicalPrice >= ₹50,000
+
+AND
+
+currentPrice <= ₹100
+
+then classify:
+
+CRITICAL_PRICE_ANOMALY
+
+Send:
+
+🚨 CRITICAL PRICE ALERT
+
+Possible pricing error detected.
+
+Product:
+XYZ
+
+Historical price:
+₹99,999
+
+Current:
+₹1
+
+Confidence:
+78%
+
+CHECK IMMEDIATELY
+
+Do NOT assume the order will be honored.
+
+---
+
+# 19. FLASH SALE MODE
+
+Allow users to enable:
+
+FLASH SALE MODE
+
+Features:
+
+* more frequent permitted checks
+* faster alert pipeline
+* priority processing
+* smaller notification latency
+* aggressive caching
+* concurrent marketplace adapters
+
+Still obey:
+
+* marketplace rate limits
+* API limits
+* robots/access rules
+* applicable terms
+
+Never bypass protections.
+
+---
+
+# 20. SALE EVENT MODE
+
+Allow user to configure:
+
+SALE EVENT
+
+Examples:
+
+* Big Billion Days
+* Great Indian Festival
+* festive sales
+* electronics sales
+* custom events
+
+Store:
+
+start time
+end time
+priority
+marketplaces
+
+Automatically enable relevant tasks during the event.
+
+---
+
+# 21. AI DEAL AGENT
+
+Build an orchestration layer.
+
+Pipeline:
+
+DISCOVER
+
+↓
+
+NORMALIZE
+
+↓
+
+VALIDATE
+
+↓
+
+ENRICH
+
+↓
+
+PRICE HISTORY
+
+↓
+
+DEAL ANALYSIS
+
+↓
+
+RULE ENGINE
+
+↓
+
+RISK ENGINE
+
+↓
+
+PRIORITY ENGINE
+
+↓
+
+NOTIFICATION
+
+↓
+
+OPTIONAL CHECKOUT PREPARATION
+
+The AI should assist reasoning but deterministic code should enforce business rules.
+
+---
+
+# 22. PRODUCT MATCHING ENGINE
+
+Different marketplaces may name the same product differently.
+
+Example:
+
+"Apple iPhone 15 128GB Black"
+
+vs
+
+"Apple iPhone15 128 GB Black"
+
+Normalize into one canonical product.
+
+Use:
+
+* brand
+* model
+* SKU
+* GTIN where available
+* product attributes
+* storage
+* color
+* size
+* model number
+
+Avoid false matches.
+
+---
+
+# 23. DUPLICATE DEAL MERGING
+
+If Amazon and Flipkart have the same product:
+
+Show:
+
+iPhone 15 128GB
+
+Amazon:
+₹49,999
+
+Flipkart:
+₹48,999
+
+Croma:
+₹50,499
+
+Best available:
+Flipkart ₹48,999
+
+---
+
+# 24. SMART PRODUCT WATCHLIST
+
+Allow:
+
+* watch product
+* watch brand
+* watch category
+* watch keyword
+* watch price
+* watch historical low
+
+Example:
+
+"Watch all Apple iPhones."
+
+---
+
+# 25. DEAL HISTORY
+
+Store every triggered alert.
+
+Fields:
+
+* product
+* marketplace
+* current price
+* reference price
+* discount
+* timestamp
+* task
+* confidence
+* URL
+* seller
+* availability
+
+Allow filtering.
+
+---
+
+# 26. ALERT INTELLIGENCE
+
+If the same deal repeatedly appears:
+
+Do not notify every time.
+
+Instead:
+
+"Deal still active."
+
+If price changes significantly:
+
+"Deal improved."
+
+Example:
+
+₹15,999 → ₹13,999
+
+Send:
+
+📉 PRICE IMPROVED
+
+---
+
+# 27. PERSONALIZED LEARNING
+
+The system can learn user preferences from explicit actions.
+
+Example:
+
+User frequently opens:
+
+Sony
+Apple
+Samsung
+
+System may rank these higher.
+
+BUT:
+
+Do not silently change user rules.
+
+Learning can affect ranking, not hard eligibility.
+
+---
+
+# 28. AI EXPLANATION
+
+Every alert should explain WHY it triggered.
+
+Example:
+
+Matched Task:
+"Laptop below ₹20,000"
+
+Reasons:
+
+✓ Category = Laptop
+✓ Current price = ₹18,499
+✓ User limit = ₹20,000
+✓ Historical median = ₹54,999
+✓ Rating = 4.4
+✓ Reviews = 8,200
+
+---
+
+# 29. FALSE POSITIVE CONTROL
+
+Before notification, perform final validation.
+
+Check:
+
+* product variant
+* price
+* stock
+* seller
+* shipping
+* coupon
+* exchange
+* subscription
+* marketplace
+* historical price
+
+If critical data changed:
+
+ABORT ALERT
+
+or
+
+MARK AS UNVERIFIED
+
+---
+
+# 30. DEAL CONFIDENCE LEVELS
+
+HIGH
+
+90–100
+
+MEDIUM
+
+70–89
+
+LOW
+
+50–69
+
+UNVERIFIED
+
+0–49
+
+Only notify aggressively for high-confidence deals unless user configures otherwise.
+
+---
+
+# 31. SYSTEM ARCHITECTURE
+
+Use a modular architecture.
+
+Suggested:
+
+/apps
+/web
+/api
+
+/packages
+/core
+/deal-engine
+/rule-engine
+/price-engine
+/notification-engine
+/marketplace-adapters
+/ai-engine
+/security
+/database
+/shared-types
+
+/services
+/scheduler
+/worker
+/notification-worker
+
+/tests
+
+/docs
+
+Do not create one giant source file.
+
+---
+
+# 32. BACKEND
+
+Use a strongly typed backend.
+
+Recommended:
+
+TypeScript + Node.js
+
+Use:
+
+* REST API
+* WebSocket/SSE for live dashboard updates
+* background workers
+* queue system
+* structured logging
+* schema validation
+
+Possible stack:
+
+Fastify or NestJS
+PostgreSQL
+Redis
+BullMQ or equivalent queue
+
+Choose stable technologies that work reliably in Replit.
+
+---
+
+# 33. FRONTEND
+
+Use:
+
+React
+TypeScript
+modern component architecture
+
+Pages:
+
+/dashboard
+/tasks
+/task/new
+/deals
+/deals/:id
+/watchlist
+/price-history
+/notifications
+/settings
+/integrations
+/system-status
+
+---
+
+# 34. DATABASE
+
+Design proper relational schemas.
+
+Tables:
+
+users
+tasks
+task_rules
+products
+product_variants
+marketplaces
+sellers
+price_observations
+deals
+deal_events
+notifications
+notification_deliveries
+watchlists
+integrations
+devices
+sale_events
+scan_jobs
+audit_logs
+
+Add indexes for:
+
+* product
+* marketplace
+* current price
+* timestamp
+* task
+* active status
+
+---
+
+# 35. QUEUE ARCHITECTURE
+
+Do not perform all monitoring inside HTTP requests.
+
+Use background jobs:
+
+discovery jobs
+price jobs
+validation jobs
+deal analysis jobs
+notification jobs
+
+Pipeline:
+
+Scheduler
+
+→ Discovery Queue
+
+→ Product Queue
+
+→ Price Queue
+
+→ Analysis Queue
+
+→ Notification Queue
+
+---
+
+# 36. FAILURE RECOVERY
+
+If a marketplace fails:
+
+Do not crash the entire system.
+
+Mark:
+
+MarketplaceStatus = DEGRADED
+
+Retry with exponential backoff.
+
+After repeated failure:
+
+temporarily pause adapter.
+
+Notify administrator/user if necessary.
+
+---
+
+# 37. OBSERVABILITY
+
+Create:
+
+* structured logs
+* metrics
+* health endpoint
+* worker health
+* marketplace health
+* queue depth
+* scan latency
+* notification latency
+* error rate
+
+Dashboard should show:
+
+Agent:
+ONLINE
+
+Workers:
+4/4
+
+Queue:
+Healthy
+
+Last scan:
+2 seconds ago
+
+---
+
+# 38. SECURITY
+
+Implement:
+
+* environment variables for secrets
+* encryption for sensitive integration tokens
+* hashed authentication credentials
+* secure sessions
+* CSRF protection where applicable
+* rate limiting
+* input validation
+* output validation
+* audit logs
+* least privilege
+* no raw payment credentials
+* no secrets in source code
+
+AI output must never directly execute arbitrary code.
+
+---
+
+# 39. AI SAFETY ARCHITECTURE
+
+LLM output must ALWAYS pass through:
+
+LLM
+
+→ JSON Schema Validator
+
+→ Rule Validator
+
+→ Permission Validator
+
+→ Deterministic Executor
+
+Never:
+
+LLM → direct browser/payment/action execution.
+
+Use explicit action schemas.
+
+---
+
+# 40. AI MODELS
+
+Create provider abstraction.
+
+Possible providers:
+
+* OpenAI
+* Gemini
+* Claude
+* OpenRouter
+* local model later
+
+Interface:
+
+AIProvider
+
+generateStructuredDecision()
+
+The core application should work even if AI is temporarily unavailable.
+
+---
+
+# 41. COST OPTIMIZATION
+
+Do NOT send every product to the LLM.
+
+Use deterministic filters first.
+
+Pipeline:
+
+Cheap filters
+
+↓
+
+Price rules
+
+↓
+
+Historical analysis
+
+↓
+
+Only suspicious/complex cases
+
+↓
+
+AI analysis
+
+This reduces API cost dramatically.
+
+---
+
+# 42. CACHING
+
+Cache:
+
+* product metadata
+* marketplace data
+* price observations
+* seller metadata
+
+Use TTL.
+
+Do not cache volatile data longer than appropriate.
+
+---
+
+# 43. SMART SCANNING
+
+Do not scan everything equally.
+
+Priority:
+
+Tier 1:
+User's exact watched products
+
+Tier 2:
+User's brands/categories
+
+Tier 3:
+Extreme discount candidates
+
+Tier 4:
+General marketplace discovery
+
+Allocate resources accordingly.
+
+---
+
+# 44. ADAPTIVE SCANNING
+
+If a product historically changes price frequently:
+
+increase permitted monitoring priority.
+
+If product rarely changes:
+
+lower priority.
+
+Do not violate marketplace/API limits.
+
+---
+
+# 45. PRICE ANOMALY ML
+
+Create an anomaly scoring system.
+
+Possible features:
+
+* price z-score
+* percentage from historical median
+* percentage from historical minimum
+* recent price velocity
+* seller change
+* variant change
+* discount magnitude
+
+Start with deterministic statistical scoring.
+
+Make ML optional.
+
+---
+
+# 46. DEAL DATABASE
+
+Keep historical observations long enough to generate useful analytics.
+
+Show:
+
+"Lowest observed price"
+
+"Average price"
+
+"Typical price"
+
+"Current percentile"
+
+Example:
+
+Current price is cheaper than 98% of observed prices.
+
+---
+
+# 47. DEAL COMPARISON
+
+Allow user to compare:
+
+Product A
+
+vs
+
+Product B
+
+Factors:
+
+* price
+* rating
+* warranty
+* seller
+* historical price
+* specifications
+* discount
+* confidence
+
+AI can provide a short explanation.
+
+---
+
+# 48. BUDGET MODE
+
+User can define:
+
+Monthly deal budget:
+₹50,000
+
+Maximum purchase:
+₹15,000
+
+System warns when multiple alerts exceed budget.
+
+---
+
+# 49. PRIORITY TASKS
+
+Tasks support:
+
+LOW
+NORMAL
+HIGH
+CRITICAL
+
+Example:
+
+iPhone under ₹10k = CRITICAL
+
+Headphones under ₹3k = NORMAL
+
+---
+
+# 50. QUIET HOURS
+
+Allow:
+
+22:00–07:00
+
+During quiet hours:
+
+* suppress non-critical notifications
+* continue monitoring
+* send summary later
+
+Critical price anomalies can optionally bypass quiet hours.
+
+---
+
+# 51. DAILY DEAL DIGEST
+
+At configurable time:
+
+"Today's best deals"
+
+Include:
+
+Top 10 deals
+
+Biggest price drops
+
+Best historical bargains
+
+Potential anomalies
+
+Missed deals
+
+---
+
+# 52. MISSED DEAL ANALYTICS
+
+If a deal expired before user opened it:
+
+record:
+
+detected time
+expired time
+price
+duration
+
+Show:
+
+"You missed this ₹12,999 → ₹8,999 deal."
+
+This helps optimize future alert priority.
+
+---
+
+# 53. DEAL SPEED METRICS
+
+Track:
+
+Detection latency
+
+Marketplace → Agent
+
+Agent → Notification
+
+Notification → User
+
+Example:
+
+Detection:
+1.2 sec
+
+Notification:
+0.4 sec
+
+Total:
+1.6 sec
+
+Never falsely claim real-time if the marketplace/API itself isn't real-time.
+
+---
+
+# 54. ADMIN PANEL
+
+Create admin diagnostics:
+
+* marketplace status
+* queues
+* workers
+* API usage
+* errors
+* active tasks
+* notification failures
+* database health
+
+---
+
+# 55. TESTING
+
+Write tests for:
+
+* price calculations
+* discount calculations
+* rule engine
+* task parser
+* product normalization
+* duplicate detection
+* anomaly detection
+* notification deduplication
+* permissions
+* checkout safety
+
+Add integration tests with mock marketplace adapters.
+
+DO NOT depend on live marketplaces for normal automated tests.
+
+---
+
+# 56. MOCK MARKETPLACE
+
+Create:
+
+MockMarketplaceAdapter
+
+This allows testing:
+
+₹1,00,000 product → ₹1
+
+₹50,000 product → ₹5,000
+
+₹20,000 product → ₹19,999
+
+stock changes
+
+seller changes
+
+price changes
+
+This is essential for development.
+
+---
+
+# 57. DEMO MODE
+
+Add:
+
+DEMO MODE
+
+Generate realistic fake deals.
+
+Example:
+
+🔥 DEMO EXTREME DEAL
+
+MacBook
+
+Normal:
+₹99,999
+
+Demo price:
+₹999
+
+This must be clearly labelled DEMO.
+
+Never mix demo data with real data.
+
+---
+
+# 58. IMPORT/EXPORT
+
+Allow users to export:
+
+* tasks
+* watchlists
+* deal history
+
+Formats:
+
+JSON
+CSV
+
+---
+
+# 59. API
+
+Create documented APIs.
+
+Examples:
+
+POST /api/tasks
+
+GET /api/tasks
+
+PATCH /api/tasks/:id
+
+DELETE /api/tasks/:id
+
+GET /api/deals
+
+GET /api/products/:id
+
+GET /api/products/:id/history
+
+POST /api/notifications/test
+
+POST /api/integrations/telegram
+
+GET /api/system/health
+
+---
+
+# 60. REAL-TIME DASHBOARD
+
+Use WebSocket/SSE.
+
+When a deal appears:
+
+Dashboard instantly updates.
+
+Example:
+
+NEW DEAL DETECTED
+
+No manual refresh.
+
+---
+
+# 61. MOBILE-FIRST DESIGN
+
+The dashboard must work well on mobile.
+
+Large:
+
+BUY/VIEW
+
+buttons.
+
+Clear:
+
+Current Price
+
+Historical Price
+
+Discount
+
+Confidence
+
+Product Link
+
+---
+
+# 62. USER TASK EXAMPLES
+
+The seeded demo should include:
+
+TASK 1:
+"iPhone under ₹10,000"
+
+TASK 2:
+"Any smartphone under ₹1,000"
+
+TASK 3:
+"Headphones under ₹500"
+
+TASK 4:
+"Smartwatch under ₹1,000"
+
+TASK 5:
+"Laptop under ₹15,000"
+
+TASK 6:
+"AC under ₹20,000"
+
+TASK 7:
+"Water purifier under ₹5,000"
+
+TASK 8:
+"TV under ₹10,000"
+
+TASK 9:
+"Any product with >90% historical discount"
+
+TASK 10:
+"Any extreme price anomaly"
+
+These are examples only. Users must be able to edit/delete them.
+
+---
+
+# 63. EXTREME DEAL ALERT TEMPLATE
+
+Example:
+
+🚨 EXTREME DEAL
+
+Apple iPhone 15 128GB
+
+💰 Current: ₹9,999
+
+📊 Historical Median: ₹59,999
+
+📉 Change: -83.3%
+
+⭐ Rating: 4.5
+
+👥 Reviews: 12,000+
+
+🏪 Seller: XYZ
+
+📦 Stock: Available
+
+🎯 Deal Score: 96/100
+
+🛡 Confidence: 94%
+
+⚠️ Verify final price before purchase.
+
+🔗 Product Link
+
+---
+
+# 64. ARCHITECTURAL PRINCIPLE
+
+Separate:
+
+DISCOVERY
+
+from
+
+DECISION
+
+from
+
+EXECUTION
+
+Marketplace adapters discover information.
+
+Deal engine decides whether something qualifies.
+
+Action engine performs permitted actions.
+
+Notification engine communicates results.
+
+This separation is mandatory.
+
+---
+
+# 65. NO HARDCODED BUSINESS LOGIC
+
+Do not hardcode:
+
+"iPhone = ₹10,000"
+
+Instead store rules in database/configuration.
+
+The user must be able to change:
+
+price
+category
+brand
+discount
+rating
+marketplace
+priority
+
+without changing source code.
+
+---
+
+# 66. CONFIGURATION
+
+Use environment variables:
+
+DATABASE_URL
+REDIS_URL
+AI_PROVIDER
+AI_API_KEY
+TELEGRAM_BOT_TOKEN
+EMAIL_PROVIDER_KEY
+PUSH_PROVIDER_KEY
+SESSION_SECRET
+
+Never commit .env.
+
+Provide:
+
+.env.example
+
+---
+
+# 67. DOCUMENTATION
+
+Generate:
+
+README.md
+
+ARCHITECTURE.md
+
+API.md
+
+DATABASE.md
+
+SECURITY.md
+
+DEPLOYMENT.md
+
+CONTRIBUTING.md
+
+TESTING.md
+
+MARKETPLACE_ADAPTER_GUIDE.md
+
+AI_RULE_ENGINE.md
+
+---
+
+# 68. REPLIT REQUIREMENT
+
+The project must run correctly in Replit.
+
+Provide:
+
+* setup instructions
+* environment variables
+* database setup
+* development command
+* production command
+* worker command
+
+Avoid unnecessary infrastructure complexity.
+
+---
+
+# 69. DEVELOPMENT ORDER
+
+Build in this order:
+
+PHASE 1
+
+Project foundation
+Database
+Authentication
+Dashboard shell
+
+PHASE 2
+
+Task engine
+Rule engine
+Product model
+
+PHASE 3
+
+Mock marketplace
+Price history
+Deal engine
+
+PHASE 4
+
+Notification system
+
+PHASE 5
+
+Real marketplace adapters using permitted/official methods
+
+PHASE 6
+
+AI natural-language task parser
+
+PHASE 7
+
+Anomaly detection
+
+PHASE 8
+
+Watchlists
+Analytics
+Deal comparison
+
+PHASE 9
+
+Safe checkout preparation
+
+PHASE 10
+
+Hardening
+Testing
+Observability
+Documentation
+
+---
+
+# 70. IMPORTANT IMPLEMENTATION RULE
+
+Do NOT pretend a marketplace integration works if credentials/API access are unavailable.
+
+If a real integration cannot be implemented legitimately:
+
+create the adapter interface + mock implementation + clear TODO.
+
+Do not create fake "live" data and present it as real.
+
+---
+
+# 71. FINAL QUALITY REQUIREMENT
+
+Before declaring the project complete:
+
+Run:
+
+* type checking
+* linting
+* unit tests
+* integration tests
+* build
+* database migration verification
+
+Fix errors.
+
+Verify:
+
+1. User can create a task.
+2. Natural language can become a structured rule.
+3. Mock marketplace produces products.
+4. Price history is stored.
+5. Deal engine detects qualifying deal.
+6. Duplicate alert is prevented.
+7. Notification is generated.
+8. Dashboard updates.
+9. Extreme price anomaly is flagged.
+10. Checkout stops for explicit user approval.
+11. No secrets are committed.
+12. No anti-bot/access-control bypass exists.
+
+---
+
+# 72. CODING STYLE
+
+Code must be:
+
+* clean
+* modular
+* strongly typed
+* documented
+* maintainable
+* production-oriented
+* beginner-readable where practical
+
+Do not create giant files.
+
+Prefer:
+
+single responsibility
+dependency injection
+interfaces
+schemas
+service classes/modules
+testable functions
+
+---
+
+# 73. REPLIT AGENT INSTRUCTION
+
+You are responsible for implementing the application, not merely describing it.
+
+First inspect the current workspace.
+
+If a project already exists:
+
+DO NOT blindly overwrite it.
+
+Understand its structure first.
+
+Then implement the architecture incrementally.
+
+If the workspace is empty:
+
+initialize the complete project.
+
+After each major phase:
+
+* run tests
+* run type checking
+* fix errors
+* continue
+
+At the end provide:
+
+1. completed architecture
+2. files created/modified
+3. setup instructions
+4. environment variables required
+5. database setup
+6. test results
+7. known limitations
+8. which marketplace integrations are actually functional
+9. which integrations require credentials/API approval
+10. how to add another marketplace
+
+MOST IMPORTANT:
+
+Never claim a feature is "live" unless it actually works.
+
+Never fabricate prices, products or marketplace responses.
+
+Never bypass CAPTCHA, anti-bot protection, authentication, access controls or rate limits.
+
+Never perform an irreversible purchase without explicit user confirmation.
+
+Build the system so it can eventually become a serious, scalable AI-powered deal monitoring platform.

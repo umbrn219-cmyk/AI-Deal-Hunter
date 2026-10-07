@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "AI Deal Hunter"
+description = "A deal-monitoring dashboard for creating price rules, testing alerts against clearly labeled marketplace demo data, reviewing price history and anomalies, and managing watchlists without scraping marketplaces or making purchases."
+version = "1.0.0"
+id = "artifacts/deal-hunter"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23850
+
+[services.development]
+run = "pnpm --filter @workspace/deal-hunter run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/deal-hunter", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/deal-hunter/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23850"
+BASE_PATH = "/"

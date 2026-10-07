@@ -3,13 +3,15 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API for the AI Deal Hunter demo-mode deal monitoring application.
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: deal-hunter
+    description: Deal monitoring, tasks, mock scans, history, and alerts
 paths:
   /healthz:
     get:
@@ -24,6 +26,249 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /deal-hunter/dashboard:
+    get:
+      operationId: getDealHunterDashboard
+      tags: [deal-hunter]
+      summary: Get dashboard summary
+      responses:
+        "200":
+          description: Dashboard totals and current system status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /deal-hunter/tasks:
+    get:
+      operationId: getDealHunterTasks
+      tags: [deal-hunter]
+      summary: List monitoring tasks
+      responses:
+        "200":
+          description: Monitoring tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DealTask"
+    post:
+      operationId: createDealHunterTask
+      tags: [deal-hunter]
+      summary: Create a monitoring task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskInput"
+      responses:
+        "201":
+          description: Created monitoring task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DealTask"
+  /deal-hunter/tasks/{id}:
+    patch:
+      operationId: updateDealHunterTask
+      tags: [deal-hunter]
+      summary: Update a monitoring task
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+      responses:
+        "200":
+          description: Updated monitoring task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DealTask"
+        "404":
+          description: Task not found
+    delete:
+      operationId: deleteDealHunterTask
+      tags: [deal-hunter]
+      summary: Delete a monitoring task
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Task deleted
+        "404":
+          description: Task not found
+  /deal-hunter/tasks/parse:
+    post:
+      operationId: parseDealHunterTask
+      tags: [deal-hunter]
+      summary: Convert natural language into a draft task
+      description: Parses a natural language rule into a structured draft. It never executes a command or starts a purchase.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParseTaskInput"
+      responses:
+        "200":
+          description: Parsed task draft for user review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParsedTask"
+  /deal-hunter/deals:
+    get:
+      operationId: getDealHunterDeals
+      tags: [deal-hunter]
+      summary: List deals and anomalies
+      parameters:
+        - in: query
+          name: classification
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deals from demo catalog, explicitly marked as demo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deal"
+  /deal-hunter/scan:
+    post:
+      operationId: runDealHunterScan
+      tags: [deal-hunter]
+      summary: Run a permitted mock-catalog scan
+      description: Scans only the built-in mock catalog. This endpoint does not connect to retailers.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanRequest"
+      responses:
+        "200":
+          description: Scan outcome
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanResult"
+  /deal-hunter/products/{id}/history:
+    get:
+      operationId: getProductPriceHistory
+      tags: [deal-hunter]
+      summary: Get observed price history for a product
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Price observations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PricePoint"
+  /deal-hunter/notifications:
+    get:
+      operationId: getDealHunterNotifications
+      tags: [deal-hunter]
+      summary: List recent alerts
+      responses:
+        "200":
+          description: Recent alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DealNotification"
+  /deal-hunter/notifications/{id}/read:
+    post:
+      operationId: markDealHunterNotificationRead
+      tags: [deal-hunter]
+      summary: Mark an alert as read
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated alert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DealNotification"
+        "404":
+          description: Alert not found
+  /deal-hunter/watchlist:
+    get:
+      operationId: getDealHunterWatchlist
+      tags: [deal-hunter]
+      summary: List watchlist entries
+      responses:
+        "200":
+          description: Watchlist entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WatchlistItem"
+    post:
+      operationId: addDealHunterWatchlistItem
+      tags: [deal-hunter]
+      summary: Add a product or keyword to the watchlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WatchlistInput"
+      responses:
+        "201":
+          description: Added watchlist entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchlistItem"
+  /deal-hunter/watchlist/{id}:
+    delete:
+      operationId: deleteDealHunterWatchlistItem
+      tags: [deal-hunter]
+      summary: Remove a watchlist entry
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Watchlist entry deleted
+        "404":
+          description: Watchlist entry not found
 components:
   schemas:
     HealthStatus:
@@ -33,4 +278,187 @@ components:
           type: string
       required:
         - status
+    DashboardSummary:
+      type: object
+      required: [activeTasks, dealsToday, extremeDeals, priceDrops, unreadAlerts, lastScanAt, scanLatencyMs, agentStatus, marketplaceStatus, recentDeals, recentNotifications]
+      properties:
+        activeTasks: { type: integer }
+        dealsToday: { type: integer }
+        extremeDeals: { type: integer }
+        priceDrops: { type: integer }
+        unreadAlerts: { type: integer }
+        lastScanAt: { type: ["string", "null"], format: date-time }
+        scanLatencyMs: { type: integer }
+        agentStatus: { type: string, enum: [online, idle, degraded] }
+        marketplaceStatus: { type: string, enum: [demo, unavailable] }
+        recentDeals:
+          type: array
+          items: { $ref: "#/components/schemas/Deal" }
+        recentNotifications:
+          type: array
+          items: { $ref: "#/components/schemas/DealNotification" }
+    DealTask:
+      type: object
+      required: [id, name, query, category, keywords, maxPrice, minDiscount, minRating, minReviews, marketplaces, priority, active, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        query: { type: string }
+        category: { type: string }
+        keywords:
+          type: array
+          items: { type: string }
+        maxPrice: { type: ["number", "null"] }
+        minDiscount: { type: number }
+        minRating: { type: number }
+        minReviews: { type: integer }
+        marketplaces:
+          type: array
+          items: { type: string }
+        priority: { type: string, enum: [low, normal, high, critical] }
+        active: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    TaskInput:
+      type: object
+      required: [name, query, category, keywords, minDiscount, minRating, minReviews, marketplaces, priority]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        query: { type: string, minLength: 1, maxLength: 300 }
+        category: { type: string, minLength: 1, maxLength: 80 }
+        keywords:
+          type: array
+          items: { type: string, maxLength: 80 }
+        maxPrice: { type: ["number", "null"], minimum: 0 }
+        minDiscount: { type: number, minimum: 0, maximum: 100 }
+        minRating: { type: number, minimum: 0, maximum: 5 }
+        minReviews: { type: integer, minimum: 0 }
+        marketplaces:
+          type: array
+          items: { type: string }
+        priority: { type: string, enum: [low, normal, high, critical] }
+    TaskUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        query: { type: string, minLength: 1, maxLength: 300 }
+        category: { type: string, minLength: 1, maxLength: 80 }
+        keywords:
+          type: array
+          items: { type: string, maxLength: 80 }
+        maxPrice: { type: ["number", "null"], minimum: 0 }
+        minDiscount: { type: number, minimum: 0, maximum: 100 }
+        minRating: { type: number, minimum: 0, maximum: 5 }
+        minReviews: { type: integer, minimum: 0 }
+        marketplaces:
+          type: array
+          items: { type: string }
+        priority: { type: string, enum: [low, normal, high, critical] }
+        active: { type: boolean }
+    ParseTaskInput:
+      type: object
+      required: [text]
+      properties:
+        text: { type: string, minLength: 3, maxLength: 500 }
+    ParsedTask:
+      type: object
+      required: [name, query, category, keywords, maxPrice, minDiscount, minRating, minReviews, marketplaces, priority, explanation, requiresReview]
+      properties:
+        name: { type: string }
+        query: { type: string }
+        category: { type: string }
+        keywords:
+          type: array
+          items: { type: string }
+        maxPrice: { type: ["number", "null"] }
+        minDiscount: { type: number }
+        minRating: { type: number }
+        minReviews: { type: integer }
+        marketplaces:
+          type: array
+          items: { type: string }
+        priority: { type: string, enum: [low, normal, high, critical] }
+        explanation: { type: string }
+        requiresReview: { type: boolean }
+    Deal:
+      type: object
+      required: [id, productId, title, category, brand, marketplace, seller, productUrl, currentPrice, historicalMedian, historicalLow, observedHigh, rating, reviewCount, stockStatus, realDiscountPercent, historicalDiscountPercent, anomalyScore, confidence, dealScore, classification, demo, matchedTaskNames, createdAt]
+      properties:
+        id: { type: string }
+        productId: { type: string }
+        title: { type: string }
+        category: { type: string }
+        brand: { type: string }
+        marketplace: { type: string }
+        seller: { type: string }
+        productUrl: { type: ["string", "null"], format: uri }
+        currentPrice: { type: number, minimum: 0 }
+        historicalMedian: { type: number, minimum: 0 }
+        historicalLow: { type: number, minimum: 0 }
+        observedHigh: { type: number, minimum: 0 }
+        rating: { type: number, minimum: 0, maximum: 5 }
+        reviewCount: { type: integer, minimum: 0 }
+        stockStatus: { type: string }
+        realDiscountPercent: { type: number, minimum: 0, maximum: 100 }
+        historicalDiscountPercent: { type: number, minimum: 0, maximum: 100 }
+        anomalyScore: { type: integer, minimum: 0, maximum: 100 }
+        confidence: { type: integer, minimum: 0, maximum: 100 }
+        dealScore: { type: integer, minimum: 0, maximum: 100 }
+        classification: { type: string, enum: [normal_deal, great_deal, extreme_deal, price_anomaly, possible_pricing_error, critical_price_anomaly] }
+        demo: { type: boolean }
+        matchedTaskNames:
+          type: array
+          items: { type: string }
+        createdAt: { type: string, format: date-time }
+    ScanRequest:
+      type: object
+      required: [source]
+      properties:
+        source: { type: string, enum: [mock] }
+    ScanResult:
+      type: object
+      required: [status, scannedProducts, matchedDeals, newAlerts, duplicateAlertsPrevented, durationMs, demo]
+      properties:
+        status: { type: string, enum: [completed, no_active_tasks] }
+        scannedProducts: { type: integer }
+        matchedDeals: { type: integer }
+        newAlerts: { type: integer }
+        duplicateAlertsPrevented: { type: integer }
+        durationMs: { type: integer }
+        demo: { type: boolean }
+    PricePoint:
+      type: object
+      required: [id, productId, price, observedAt, demo]
+      properties:
+        id: { type: string }
+        productId: { type: string }
+        price: { type: number, minimum: 0 }
+        observedAt: { type: string, format: date-time }
+        demo: { type: boolean }
+    DealNotification:
+      type: object
+      required: [id, title, message, kind, read, dealId, createdAt, demo]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        message: { type: string }
+        kind: { type: string, enum: [deal, anomaly, improved, system] }
+        read: { type: boolean }
+        dealId: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        demo: { type: boolean }
+    WatchlistItem:
+      type: object
+      required: [id, label, kind, createdAt]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        kind: { type: string, enum: [product, brand, category, keyword] }
+        createdAt: { type: string, format: date-time }
+    WatchlistInput:
+      type: object
+      required: [label, kind]
+      properties:
+        label: { type: string, minLength: 1, maxLength: 120 }
+        kind: { type: string, enum: [product, brand, category, keyword] }
 

@@ -6,6 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface PricePoint {
+  id: string;
+  productId: string;
+  /** @minimum 0 */
+  price: number;
+  observedAt: Date;
+  demo: boolean;
 }
