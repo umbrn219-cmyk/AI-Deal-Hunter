@@ -108,10 +108,18 @@ function deepFreeze<T extends object>(value: T): T {
 }
 
 export function notificationFromSnapshot(s: DealSnapshot) {
-  if (s.alertDecision !== "SEND_NOTIFICATION" || s.priceStatus !== "VERIFIED" ||
-      s.sourceKind !== "LISTING" || priceProblem(s) ||
-      !s.variantLinkGuaranteed || !s.sellerLinkGuaranteed ||
-      s.urlStatus !== "VALID" || !s.canonicalProductUrl || !isFresh(s)) throw new Error("Unverified or stale snapshot cannot generate a deal notification");
+  if (!isVerifiedExactSnapshot(s) || !isFresh(s)) throw new Error("Unverified or stale snapshot cannot generate a deal notification");
+  return snapshotNotificationContent(s);
+}
+
+function isVerifiedExactSnapshot(s: DealSnapshot) {
+  return s.alertDecision === "SEND_NOTIFICATION" && s.priceStatus === "VERIFIED" &&
+    s.sourceKind === "LISTING" && !priceProblem(s) &&
+    s.variantLinkGuaranteed && s.sellerLinkGuaranteed &&
+    s.urlStatus === "VALID" && Boolean(s.canonicalProductUrl);
+}
+
+function snapshotNotificationContent(s: DealSnapshot) {
   return Object.freeze({
     price: s.currentPrice, url: s.canonicalProductUrl,
     title: `${s.productTitle} ${s.variant}`.trim(),
@@ -121,9 +129,12 @@ export function notificationFromSnapshot(s: DealSnapshot) {
 
 /** All delivery surfaces use the saved observation, never the mutable catalog. */
 export function exactListingNotification(snapshot: DealSnapshot | null) {
-  if (!snapshot) return null;
-  try { return notificationFromSnapshot(snapshot); }
-  catch { return null; } // Legacy, demo, conditional and stale records have no link.
+  // Snapshot URLs are immutable evidence for the notification already issued.
+  // Freshness is checked before issuance; rendering a past alert must not swap
+  // its listing or silently discard its exact destination after the TTL.
+  return snapshot && isVerifiedExactSnapshot(snapshot)
+    ? snapshotNotificationContent(snapshot)
+    : null;
 }
 
 export function demoObservation(product: {

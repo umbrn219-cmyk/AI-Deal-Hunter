@@ -17,4 +17,9 @@ export interface DealNotification {
   dealId: string | null;
   createdAt: Date;
   demo: boolean;
+  /**
+     * Exact variant and seller URL from the verified price snapshot; null for demo, stale or unverified alerts.
+     * @nullable
+     */
+  productUrl?: string | null;
 }

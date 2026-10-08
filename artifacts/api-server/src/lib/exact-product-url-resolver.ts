@@ -46,36 +46,61 @@ export class ExactProductUrlResolver {
   async resolve(listing: ListingObservation, adapter: MarketplaceAdapter) {
     const invalid = (reason: string, chain: string[] = [], finalUrl: string | null = null) =>
       ({ urlStatus: "INVALID", canonicalProductUrl: null, finalResolvedUrl: finalUrl, redirectChain: chain, reason, sellerLinkGuaranteed: false, variantLinkGuaranteed: false });
-    // Only URLs supplied by this very observation may be selected.
-    const original = listing.offerUrl ?? listing.canonicalProductUrl ?? listing.productUrl;
-    if (!original || !permittedUrl(original, adapter) || isGenericPage(original)) return invalid("URL_INVALID");
     // A product-only page can default to another variant or seller. Do not
     // advertise the observed price unless this destination selects both.
     if (!adapter.variantSpecificUrls || !adapter.sellerSpecificUrls ||
         (listing.offerId && !adapter.offerSpecificUrls)) return invalid("EXACT_LISTING_LINK_UNAVAILABLE");
-    const sourceIdentity = adapter.identityFromUrl(original);
-    if (!sourceIdentity || sourceIdentity.productId !== listing.productId) return invalid("PRODUCT_URL_MISMATCH");
-    const resolved = await adapter.inspectUrl(original);
-    const chain = [original, ...resolved.redirectChain, resolved.finalUrl];
-    if (chain.length > 12 || chain.some(url => !permittedUrl(url, adapter) || isGenericPage(url))) return invalid("REDIRECT_INVALID", chain, resolved.finalUrl);
     const same = (identity: UrlIdentity | null) => identity &&
       identity.productId === listing.productId &&
       identity.productVariantId === listing.productVariantId &&
       identity.sellerId === listing.sellerId &&
       (!listing.offerId || identity.offerId === listing.offerId);
-    if (resolved.pageKind !== "LISTING" || !same(resolved.identity) ||
-        chain.some(url => !same(adapter.identityFromUrl(url)))) {
-      return invalid("IDENTITY_URL_MISMATCH", chain, resolved.finalUrl);
-    }
-    const canonical = new URL(resolved.finalUrl);
-    for (const key of adapter.trackingParameters) canonical.searchParams.delete(key);
-    canonical.hash = "";
-    if (!same(adapter.identityFromUrl(canonical.href))) return invalid("CANONICAL_IDENTITY_MISMATCH", chain, resolved.finalUrl);
-    return {
-      urlStatus: "VALID", canonicalProductUrl: canonical.href,
-      finalResolvedUrl: resolved.finalUrl, redirectChain: chain, reason: null,
-      sellerLinkGuaranteed: adapter.sellerSpecificUrls,
-      variantLinkGuaranteed: adapter.variantSpecificUrls,
+    const identityAt = (url: string) => {
+      try { return adapter.identityFromUrl(url); }
+      catch { return null; }
     };
+    // Try URLs attached to this exact observation. A generic offer/search URL
+    // must not hide a usable canonical listing URL from the same observation.
+    const candidates = [...new Set([
+      listing.offerUrl, listing.canonicalProductUrl, listing.productUrl,
+    ].filter((url): url is string => Boolean(url)))];
+    let lastFailure = invalid("URL_INVALID");
+    for (const original of candidates) {
+      if (!permittedUrl(original, adapter) || isGenericPage(original)) continue;
+      if (!same(identityAt(original))) {
+        lastFailure = invalid("PRODUCT_URL_MISMATCH");
+        continue;
+      }
+      let resolved: UrlInspection;
+      try { resolved = await adapter.inspectUrl(original); }
+      catch {
+        lastFailure = invalid("URL_INSPECTION_FAILED");
+        continue;
+      }
+      const chain = [original, ...resolved.redirectChain, resolved.finalUrl];
+      if (chain.length > 12 || chain.some(url => !permittedUrl(url, adapter) || isGenericPage(url))) {
+        lastFailure = invalid("REDIRECT_INVALID", chain, resolved.finalUrl);
+        continue;
+      }
+      if (resolved.pageKind !== "LISTING" || !same(resolved.identity) ||
+          chain.some(url => !same(identityAt(url)))) {
+        lastFailure = invalid("IDENTITY_URL_MISMATCH", chain, resolved.finalUrl);
+        continue;
+      }
+      const canonical = new URL(resolved.finalUrl);
+      for (const key of adapter.trackingParameters) canonical.searchParams.delete(key);
+      canonical.hash = "";
+      if (!same(identityAt(canonical.href))) {
+        lastFailure = invalid("CANONICAL_IDENTITY_MISMATCH", chain, resolved.finalUrl);
+        continue;
+      }
+      return {
+        urlStatus: "VALID", canonicalProductUrl: canonical.href,
+        finalResolvedUrl: resolved.finalUrl, redirectChain: chain, reason: null,
+        sellerLinkGuaranteed: adapter.sellerSpecificUrls,
+        variantLinkGuaranteed: adapter.variantSpecificUrls,
+      };
+    }
+    return lastFailure;
   }
 }

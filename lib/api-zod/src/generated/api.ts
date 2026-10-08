@@ -94,7 +94,8 @@ export const GetDealHunterDashboardResponse = zod.object({
   "read": zod.boolean(),
   "dealId": zod.string().nullable(),
   "createdAt": zod.coerce.date(),
-  "demo": zod.boolean()
+  "demo": zod.boolean(),
+  "productUrl": zod.string().url().nullish().describe('Exact variant and seller URL from the verified price snapshot; null for demo, stale or unverified alerts.')
 }))
 })
 
@@ -390,7 +391,8 @@ export const GetDealHunterNotificationsResponseItem = zod.object({
   "read": zod.boolean(),
   "dealId": zod.string().nullable(),
   "createdAt": zod.coerce.date(),
-  "demo": zod.boolean()
+  "demo": zod.boolean(),
+  "productUrl": zod.string().url().nullish().describe('Exact variant and seller URL from the verified price snapshot; null for demo, stale or unverified alerts.')
 })
 export const GetDealHunterNotificationsResponse = zod.array(GetDealHunterNotificationsResponseItem)
 
@@ -410,7 +412,8 @@ export const MarkDealHunterNotificationReadResponse = zod.object({
   "read": zod.boolean(),
   "dealId": zod.string().nullable(),
   "createdAt": zod.coerce.date(),
-  "demo": zod.boolean()
+  "demo": zod.boolean(),
+  "productUrl": zod.string().url().nullish().describe('Exact variant and seller URL from the verified price snapshot; null for demo, stale or unverified alerts.')
 })
 
 
