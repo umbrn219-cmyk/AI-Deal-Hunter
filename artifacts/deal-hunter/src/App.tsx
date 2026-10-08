@@ -133,6 +133,18 @@ function ExactListingLink({ url, id }: { url?: string | null; id: string }) {
     <ExternalLink size={13} />Open exact listing
   </a>;
 }
+function NotificationTitle({ id, title, url }: { id: string; title: string; url?: string | null }) {
+  if (!url) return <p className="notif-title">{title}</p>;
+  return <a
+    className="notif-title"
+    href={url}
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label={`Open exact listing for ${title}`}
+    data-testid={`link-notification-title-${id}`}
+    style={{ display: 'block', textDecoration: 'none' }}
+  >{title}</a>;
+}
 function DealSummaryRow({ deal }: { deal: Deal }) {
   return <div className="deal-row" data-testid={`row-deal-${deal.id}`}>
     <div><p className="deal-title">{deal.title}</p><div className="deal-meta"><DemoFlag /><span>{deal.marketplace}</span><span>·</span><span>{deal.brand}</span><span>·</span><Classification deal={deal} /></div></div>
@@ -140,7 +152,7 @@ function DealSummaryRow({ deal }: { deal: Deal }) {
   </div>;
 }
 function NotificationPreview({ notification }: { notification: { id: string; title: string; message: string; createdAt: string; read: boolean; productUrl?: string | null } }) {
-  return <div className="notification-item" data-testid={`notification-preview-${notification.id}`}><span className={`notif-marker ${notification.read ? 'read' : ''}`} /><div><p className="notif-title">{notification.title}</p><p className="notif-copy">{notification.message}</p><ExactListingLink url={notification.productUrl} id={notification.id} /><div className="notif-time">{relativeTime(notification.createdAt)}</div></div></div>;
+  return <div className="notification-item" data-testid={`notification-preview-${notification.id}`}><span className={`notif-marker ${notification.read ? 'read' : ''}`} /><div><NotificationTitle id={notification.id} title={notification.title} url={notification.productUrl} /><p className="notif-copy">{notification.message}</p><ExactListingLink url={notification.productUrl} id={notification.id} /><div className="notif-time">{relativeTime(notification.createdAt)}</div></div></div>;
 }
 
 function DashboardPage() {
@@ -342,7 +354,7 @@ function NotificationsPage() {
   return <main className="page">
     <PageTitle eyebrow="Inbox / Review signals" title="Alerts" subtitle="A record of matches and warnings. Demo alerts are clearly identified." action={<button className="button button-quiet" onClick={markVisible} disabled={mark.isPending || !items.some(n => !n.read)} data-testid="button-mark-visible-read"><CheckCheck size={14} />Mark visible read</button>} />
     <div className="filter-row">{(['all', 'unread', 'read'] as const).map(v => <button className={`filter-chip ${filter === v ? 'selected' : ''}`} key={v} onClick={() => setFilter(v)} data-testid={`button-alert-filter-${v}`}>{v === 'all' ? 'Everything' : v}</button>)}</div>
-    {query.isLoading ? <SkeletonRows /> : query.isError ? <ErrorPanel message="Alerts could not be loaded." retry={() => void query.refetch()} /> : items.length === 0 ? <EmptyPanel title={filter === 'all' ? 'No alerts yet' : `No ${filter} alerts`} detail="When a monitor matches a demo catalog item or flags a price anomaly, it will appear here." /> : <div className="card" style={{ padding: '4px 19px' }}>{items.map(item => <div className="notification-item" key={item.id} data-testid={`notification-${item.id}`}><span className={`notif-marker ${item.read ? 'read' : ''}`} /><div style={{ flex: 1 }}><div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}><p className="notif-title" style={{ margin: 0 }}>{item.title}</p><span className="tag" style={{ background: '#f0eee5', color: '#696b5d' }}>{item.kind}</span>{item.demo && <DemoFlag />}</div><p className="notif-copy" style={{ marginTop: 6 }}>{item.message}</p><ExactListingLink url={item.productUrl} id={item.id} /><div className="notif-time">{new Date(item.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</div></div>{!item.read && <button className="button button-quiet" onClick={() => markRead(item.id)} disabled={mark.isPending} data-testid={`button-mark-read-${item.id}`}><Check size={13} />Read</button>}</div>)}</div>}
+    {query.isLoading ? <SkeletonRows /> : query.isError ? <ErrorPanel message="Alerts could not be loaded." retry={() => void query.refetch()} /> : items.length === 0 ? <EmptyPanel title={filter === 'all' ? 'No alerts yet' : `No ${filter} alerts`} detail="When a monitor matches a demo catalog item or flags a price anomaly, it will appear here." /> : <div className="card" style={{ padding: '4px 19px' }}>{items.map(item => <div className="notification-item" key={item.id} data-testid={`notification-${item.id}`}><span className={`notif-marker ${item.read ? 'read' : ''}`} /><div style={{ flex: 1 }}><div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}><NotificationTitle id={item.id} title={item.title} url={item.productUrl} /><span className="tag" style={{ background: '#f0eee5', color: '#696b5d' }}>{item.kind}</span>{item.demo && <DemoFlag />}</div><p className="notif-copy" style={{ marginTop: 6 }}>{item.message}</p><ExactListingLink url={item.productUrl} id={item.id} /><div className="notif-time">{new Date(item.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</div></div>{!item.read && <button className="button button-quiet" onClick={() => markRead(item.id)} disabled={mark.isPending} data-testid={`button-mark-read-${item.id}`}><Check size={13} />Read</button>}</div>)}</div>}
     {notice && <Toast text={notice} close={() => setNotice('')} />}
   </main>;
 }

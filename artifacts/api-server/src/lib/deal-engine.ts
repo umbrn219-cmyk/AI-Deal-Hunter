@@ -173,14 +173,6 @@ export async function runMockScan(): Promise<{
         matchesTask(task, product, discount),
       );
       if (matchedTasks.length === 0) continue;
-      matchedDeals += 1;
-
-      await db.insert(dealHunterPriceObservationsTable).values({
-        productId: product.id,
-        price: observation.currentPrice,
-        observedAt: new Date(observation.priceObservedAt),
-        listing: observation,
-      });
 
       const historicalDiscountPercent = Math.round(discount * 10) / 10;
       const belowObservedLow = product.currentPrice < historicalLow;
@@ -209,6 +201,19 @@ export async function runMockScan(): Promise<{
       const validation = await validateDeal(observation, historicalMedian, {
         critical: matchedTasks.some(task => task.priority === "critical") || classification.includes("anomaly"),
       });
+      // Demo rows remain visibly synthetic. Any real listing must pass exact
+      // price, seller, variant, availability, freshness, and URL checks before
+      // it can enter price history or appear as a deal.
+      if (!validation.accepted && observation.sourceKind !== "DEMO") continue;
+
+      matchedDeals += 1;
+      await db.insert(dealHunterPriceObservationsTable).values({
+        productId: product.id,
+        price: validation.snapshot.currentPrice,
+        observedAt: new Date(validation.snapshot.priceObservedAt),
+        listing: validation.snapshot,
+      });
+
       const fingerprint = `exact:${observationIdentity(observation)}`;
       const existingDeal = await db
         .select()
